@@ -42,6 +42,7 @@ SEED = 42
 random.seed(SEED)
 np.random.seed(SEED)
 torch.manual_seed(SEED)
+torch.set_float32_matmul_precision("high")
 
 sc.settings.verbosity = 1
 sc.settings.set_figure_params(dpi=100, frameon=False)
@@ -836,7 +837,11 @@ if TEST_PATH.exists():
     y_pred_ae_test = knn_ae.predict(Z_test_ae)
 
     # --- scANVI on test set ---
-    scanvi_preds_test = scanvi_model.predict(adata_test, soft=False)
+    # prepare_query_data aligns the test AnnData genes to the model's gene registry
+    # and sets up the required scVI variable/obs metadata so that predict() works.
+    adata_test_scanvi = adata_test.copy()
+    scvi.model.SCANVI.prepare_query_data(adata_test_scanvi, reference_model=scanvi_model)
+    scanvi_preds_test = scanvi_model.predict(adata_test_scanvi, soft=False)
     y_pred_scanvi_test = np.array(scanvi_preds_test)
 
     # Compile results if ground truth is available
