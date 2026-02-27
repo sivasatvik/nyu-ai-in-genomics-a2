@@ -47,6 +47,24 @@ sc.settings.set_figure_params(dpi=100, frameon=False)
 DATA_PATH = Path("braun_dataset.h5ad")
 TEST_PATH = Path("test.h5ad")
 
+# --------------------------------------------------------------------------- #
+# Download datasets from Google Drive (skipped if files already exist)
+# --------------------------------------------------------------------------- #
+import gdown  # noqa: E402  (imported here to keep library block together)
+
+_GDRIVE_URLS = {
+    DATA_PATH: "https://drive.google.com/uc?id=1ZZWbVq-qwGUr76WSecPUrKiyLJP4VVtz",
+    TEST_PATH: "https://drive.google.com/uc?id=1dvEJ46a5RJyxaXxo_p-Bj0BwN8B7vppv",
+}
+
+for _path, _url in _GDRIVE_URLS.items():
+    if not _path.exists():
+        print(f"Downloading {_path.name} from Google Drive …")
+        gdown.download(_url, str(_path), quiet=False, fuzzy=False)
+        print(f"  Saved to {_path}")
+    else:
+        print(f"{_path.name} already present — skipping download.")
+
 # =============================================================================
 # PART 1 — Data Understanding and Classical Baselines
 # =============================================================================
