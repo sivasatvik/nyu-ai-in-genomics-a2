@@ -16,7 +16,12 @@
 # =============================================================================
 
 import random
+import sys
 import warnings
+
+# Force line-buffered stdout so print statements appear immediately in sbatch /
+# Singularity logs rather than being flushed only at script exit.
+sys.stdout.reconfigure(line_buffering=True)
 
 import anndata
 import matplotlib.pyplot as plt
