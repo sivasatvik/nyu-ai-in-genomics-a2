@@ -837,15 +837,20 @@ if TEST_PATH.exists():
     y_pred_ae_test = knn_ae.predict(Z_test_ae)
 
     # --- scANVI on test set ---
-    # prepare_query_data aligns the test AnnData genes to the model's gene registry
-    # and sets up the required scVI variable/obs metadata so that predict() works.
-    # The model was registered with batch_key="batch" and labels_key="celltype_scvi",
-    # so both columns must exist in the query AnnData before prepare_query_data runs.
+    # Register the test AnnData with the same schema used during training so that
+    # scanvi_model.predict(adata) can validate and score it.
+    # The model was trained with batch_key="batch" and labels_key="celltype_scvi";
+    # both columns must exist before setup_anndata runs.
     adata_test_scanvi = adata_test.copy()
     if "batch" not in adata_test_scanvi.obs.columns:
         adata_test_scanvi.obs["batch"] = "test"
     adata_test_scanvi.obs["celltype_scvi"] = "Unknown"
-    scvi.model.SCANVI.prepare_query_data(adata_test_scanvi, reference_model=scanvi_model)
+    scvi.model.SCANVI.setup_anndata(
+        adata_test_scanvi,
+        labels_key="celltype_scvi",
+        unlabeled_category="Unknown",
+        batch_key="batch",
+    )
     scanvi_preds_test = scanvi_model.predict(adata_test_scanvi, soft=False)
     y_pred_scanvi_test = np.array(scanvi_preds_test)
 
