@@ -837,20 +837,16 @@ if TEST_PATH.exists():
     y_pred_ae_test = knn_ae.predict(Z_test_ae)
 
     # --- scANVI on test set ---
-    # Register the test AnnData with the same schema used during training so that
-    # scanvi_model.predict(adata) can validate and score it.
-    # The model was trained with batch_key="batch" and labels_key="celltype_scvi";
-    # both columns must exist before setup_anndata runs.
+    # Ensure the test AnnData has the same obs columns the model was trained with
+    # (batch_key="batch", labels_key="celltype_scvi").  Do NOT call setup_anndata
+    # here: that would create an independent registry with different batch/label
+    # encodings, causing predict() to look up wrong indices.  Instead, let the
+    # model's internal _validate_anndata transfer mechanism map the test adata
+    # against the training registry automatically.
     adata_test_scanvi = adata_test.copy()
     if "batch" not in adata_test_scanvi.obs.columns:
         adata_test_scanvi.obs["batch"] = "test"
     adata_test_scanvi.obs["celltype_scvi"] = "Unknown"
-    scvi.model.SCANVI.setup_anndata(
-        adata_test_scanvi,
-        labels_key="celltype_scvi",
-        unlabeled_category="Unknown",
-        batch_key="batch",
-    )
     scanvi_preds_test = scanvi_model.predict(adata_test_scanvi, soft=False)
     y_pred_scanvi_test = np.array(scanvi_preds_test)
 
