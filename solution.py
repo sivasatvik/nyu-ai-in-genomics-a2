@@ -912,6 +912,8 @@ if TEST_PATH.exists():
     if "batch" not in adata_test_scanvi.obs.columns:
         adata_test_scanvi.obs["batch"] = "test"
     adata_test_scanvi.obs["celltype_scvi"] = "Unknown"
+    # Extend the model's category registries to accept unseen batch/label values
+    scvi.model.SCANVI.prepare_query_anndata(adata_test_scanvi, scanvi_model)
     scanvi_preds_test = scanvi_model.predict(adata_test_scanvi, soft=False)
     y_pred_scanvi_test = np.array(scanvi_preds_test)
 
