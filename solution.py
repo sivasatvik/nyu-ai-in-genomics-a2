@@ -147,8 +147,8 @@ sc.pl.violin(
     groupby="batch",
     rotation=45,
     show=False,
-    figsize=(16, 6),
 )
+plt.gcf().set_size_inches(16, 6)
 plt.title("Genes expressed per batch")
 plt.tight_layout()
 plt.savefig(FIGURES_DIR / "1_1_qc_per_batch_genes.png", dpi=600)
@@ -160,8 +160,8 @@ sc.pl.violin(
     groupby="batch",
     rotation=45,
     show=False,
-    figsize=(16, 6),
 )
+plt.gcf().set_size_inches(16, 6)
 plt.title("Total counts per batch")
 plt.tight_layout()
 plt.savefig(FIGURES_DIR / "1_1_qc_per_batch_counts.png", dpi=600)
@@ -174,8 +174,8 @@ sc.pl.violin(
     groupby="celltype",
     rotation=45,
     show=False,
-    figsize=(22, 6),
 )
+plt.gcf().set_size_inches(22, 6)
 plt.title("Genes expressed per cell type")
 plt.tight_layout()
 plt.savefig(FIGURES_DIR / "1_1_qc_per_celltype_genes.png", dpi=600)
@@ -187,8 +187,8 @@ sc.pl.violin(
     groupby="celltype",
     rotation=45,
     show=False,
-    figsize=(22, 6),
 )
+plt.gcf().set_size_inches(22, 6)
 plt.title("Total counts per cell type")
 plt.tight_layout()
 plt.savefig(FIGURES_DIR / "1_1_qc_per_celltype_counts.png", dpi=600)
