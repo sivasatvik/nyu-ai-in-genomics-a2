@@ -342,7 +342,8 @@ for color_key, fname, title in [
     ("n_genes_by_counts", "1_3_umap_ngenes.png", "n_genes_by_counts"),
     ("total_counts", "1_3_umap_counts.png", "total_counts"),
 ]:
-    sc.pl.umap(adata_cl, color=color_key, title=title, show=False, figsize=(16, 12))
+    sc.pl.umap(adata_cl, color=color_key, title=title, show=False)
+    plt.gcf().set_size_inches(16, 12)
     plt.tight_layout()
     plt.savefig(FIGURES_DIR / fname, dpi=600)
     plt.close()
@@ -618,7 +619,8 @@ for color_key, fname, title in [
     ("celltype_ground_truth", "2_1_umap_ae_celltype.png", "AE latent — cell type"),
     ("batch", "2_1_umap_ae_batch.png", "AE latent — batch"),
 ]:
-    sc.pl.umap(adata_ae, color=color_key, title=title, show=False, figsize=(16, 12))
+    sc.pl.umap(adata_ae, color=color_key, title=title, show=False)
+    plt.gcf().set_size_inches(16, 12)
     plt.tight_layout()
     plt.savefig(FIGURES_DIR / fname, dpi=600)
     plt.close()
@@ -687,7 +689,8 @@ for color_key, fname, title in [
     ("batch", "2_2_umap_scvi_batch.png", "scVI latent — batch"),
     ("celltype_ground_truth", "2_2_umap_scvi_celltype.png", "scVI latent — cell type"),
 ]:
-    sc.pl.umap(adata_scvi, color=color_key, title=title, show=False, figsize=(16, 12))
+    sc.pl.umap(adata_scvi, color=color_key, title=title, show=False)
+    plt.gcf().set_size_inches(16, 12)
     plt.tight_layout()
     plt.savefig(FIGURES_DIR / fname, dpi=600)
     plt.close()
@@ -738,7 +741,8 @@ for color_key, fname, title in [
     ("celltype_ground_truth", "2_3_umap_scanvi_truth.png", "scANVI — ground truth"),
     ("batch", "2_3_umap_scanvi_batch.png", "scANVI — batch"),
 ]:
-    sc.pl.umap(adata_scvi, color=color_key, title=title, show=False, figsize=(16, 12))
+    sc.pl.umap(adata_scvi, color=color_key, title=title, show=False)
+    plt.gcf().set_size_inches(16, 12)
     plt.tight_layout()
     plt.savefig(FIGURES_DIR / fname, dpi=600)
     plt.close()
