@@ -137,7 +137,7 @@ for ax, metric in zip(axes, ["n_genes_by_counts", "total_counts"]):
     sc.pl.violin(braun_dataset, metric, jitter=False, show=False, ax=ax)
     ax.set_title(f"Dataset-wide — {metric}")
 plt.tight_layout()
-plt.savefig(FIGURES_DIR / "1_1_qc_dataset_wide.png", dpi=600)
+plt.savefig(FIGURES_DIR / "1_1_qc_dataset_wide.png", dpi=300)
 plt.close()
 
 # Per-batch QC violin
@@ -151,7 +151,7 @@ sc.pl.violin(
 plt.gcf().set_size_inches(16, 6)
 plt.title("Genes expressed per batch")
 plt.tight_layout()
-plt.savefig(FIGURES_DIR / "1_1_qc_per_batch_genes.png", dpi=600)
+plt.savefig(FIGURES_DIR / "1_1_qc_per_batch_genes.png", dpi=300)
 plt.close()
 
 sc.pl.violin(
@@ -164,7 +164,7 @@ sc.pl.violin(
 plt.gcf().set_size_inches(16, 6)
 plt.title("Total counts per batch")
 plt.tight_layout()
-plt.savefig(FIGURES_DIR / "1_1_qc_per_batch_counts.png", dpi=600)
+plt.savefig(FIGURES_DIR / "1_1_qc_per_batch_counts.png", dpi=300)
 plt.close()
 
 # Per-celltype QC violin
@@ -175,10 +175,10 @@ sc.pl.violin(
     rotation=45,
     show=False,
 )
-plt.gcf().set_size_inches(22, 6)
+plt.gcf().set_size_inches(22, 12)
 plt.title("Genes expressed per cell type")
 plt.tight_layout()
-plt.savefig(FIGURES_DIR / "1_1_qc_per_celltype_genes.png", dpi=600)
+plt.savefig(FIGURES_DIR / "1_1_qc_per_celltype_genes.png", dpi=300)
 plt.close()
 
 sc.pl.violin(
@@ -188,10 +188,10 @@ sc.pl.violin(
     rotation=45,
     show=False,
 )
-plt.gcf().set_size_inches(22, 6)
+plt.gcf().set_size_inches(22, 12)
 plt.title("Total counts per cell type")
 plt.tight_layout()
-plt.savefig(FIGURES_DIR / "1_1_qc_per_celltype_counts.png", dpi=600)
+plt.savefig(FIGURES_DIR / "1_1_qc_per_celltype_counts.png", dpi=300)
 plt.close()
 
 print("Saved QC plots.")
@@ -304,7 +304,7 @@ disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=classes)
 disp.plot(ax=ax, xticks_rotation=90, colorbar=False, cmap="Blues")
 ax.set_title("PCA+kNN Confusion Matrix (unlabeled cells)")
 plt.tight_layout()
-plt.savefig(FIGURES_DIR / "1_3_knn_confusion_matrix.png", dpi=600)
+plt.savefig(FIGURES_DIR / "1_3_knn_confusion_matrix.png", dpi=300)
 plt.close()
 
 # ROC curves (macro OvR)
@@ -323,7 +323,7 @@ ax.set_ylabel("TPR")
 ax.set_title("PCA+kNN ROC Curves (unlabeled cells)")
 ax.legend(bbox_to_anchor=(1.05, 1), loc="upper left", fontsize=7)
 plt.tight_layout()
-plt.savefig(FIGURES_DIR / "1_3_knn_roc.png", dpi=600)
+plt.savefig(FIGURES_DIR / "1_3_knn_roc.png", dpi=300)
 plt.close()
 
 # UMAP
@@ -345,7 +345,7 @@ for color_key, fname, title in [
     sc.pl.umap(adata_cl, color=color_key, title=title, show=False)
     plt.gcf().set_size_inches(16, 12)
     plt.tight_layout()
-    plt.savefig(FIGURES_DIR / fname, dpi=600)
+    plt.savefig(FIGURES_DIR / fname, dpi=300)
     plt.close()
 
 print("Saved PCA+kNN plots.")
@@ -472,7 +472,7 @@ ax.set_ylabel("Cross-Entropy Loss")
 ax.set_title("MLP Training/Validation Loss")
 ax.legend()
 plt.tight_layout()
-plt.savefig(FIGURES_DIR / "1_4_mlp_loss_curves.png", dpi=600)
+plt.savefig(FIGURES_DIR / "1_4_mlp_loss_curves.png", dpi=300)
 plt.close()
 
 # Predict on masked cells
@@ -495,7 +495,7 @@ ConfusionMatrixDisplay(cm_mlp, display_labels=le.classes_).plot(
 )
 ax.set_title("MLP Confusion Matrix (unlabeled cells)")
 plt.tight_layout()
-plt.savefig(FIGURES_DIR / "1_4_mlp_confusion_matrix.png", dpi=600)
+plt.savefig(FIGURES_DIR / "1_4_mlp_confusion_matrix.png", dpi=300)
 plt.close()
 
 # ROC curves
@@ -513,7 +513,7 @@ ax.set_ylabel("TPR")
 ax.set_title("MLP ROC Curves (unlabeled cells)")
 ax.legend(bbox_to_anchor=(1.05, 1), loc="upper left", fontsize=7)
 plt.tight_layout()
-plt.savefig(FIGURES_DIR / "1_4_mlp_roc.png", dpi=600)
+plt.savefig(FIGURES_DIR / "1_4_mlp_roc.png", dpi=300)
 plt.close()
 
 print("\n--- Architecture summary ---")
@@ -599,7 +599,7 @@ ax.set_ylabel("MSE")
 ax.set_title("Autoencoder Reconstruction Loss")
 ax.legend()
 plt.tight_layout()
-plt.savefig(FIGURES_DIR / "2_1_ae_loss.png", dpi=600)
+plt.savefig(FIGURES_DIR / "2_1_ae_loss.png", dpi=300)
 plt.close()
 
 # Extract latent embeddings
@@ -622,7 +622,7 @@ for color_key, fname, title in [
     sc.pl.umap(adata_ae, color=color_key, title=title, show=False)
     plt.gcf().set_size_inches(16, 12)
     plt.tight_layout()
-    plt.savefig(FIGURES_DIR / fname, dpi=600)
+    plt.savefig(FIGURES_DIR / fname, dpi=300)
     plt.close()
 
 # kNN on AE latent for the masked cells
@@ -692,7 +692,7 @@ for color_key, fname, title in [
     sc.pl.umap(adata_scvi, color=color_key, title=title, show=False)
     plt.gcf().set_size_inches(16, 12)
     plt.tight_layout()
-    plt.savefig(FIGURES_DIR / fname, dpi=600)
+    plt.savefig(FIGURES_DIR / fname, dpi=300)
     plt.close()
 
 print("Saved scVI UMAP plots.")
@@ -744,7 +744,7 @@ for color_key, fname, title in [
     sc.pl.umap(adata_scvi, color=color_key, title=title, show=False)
     plt.gcf().set_size_inches(16, 12)
     plt.tight_layout()
-    plt.savefig(FIGURES_DIR / fname, dpi=600)
+    plt.savefig(FIGURES_DIR / fname, dpi=300)
     plt.close()
 
 # Prediction-confidence violin — choose a cell type with enough cells
@@ -759,9 +759,10 @@ sc.pl.violin(
     rotation=45,
     show=False,
 )
+plt.gcf().set_size_inches(16, 12)
 plt.title("scANVI prediction confidence per predicted cell type")
 plt.tight_layout()
-plt.savefig(FIGURES_DIR / "2_3_scanvi_confidence_violin.png", dpi=600)
+plt.savefig(FIGURES_DIR / "2_3_scanvi_confidence_violin.png", dpi=300)
 plt.close()
 
 # Evaluate on the masked (unlabeled) cells
@@ -792,7 +793,7 @@ ax.set_ylabel("TPR")
 ax.set_title("scANVI ROC Curves (unlabeled cells)")
 ax.legend(bbox_to_anchor=(1.05, 1), loc="upper left", fontsize=7)
 plt.tight_layout()
-plt.savefig(FIGURES_DIR / "2_3_scanvi_roc.png", dpi=600)
+plt.savefig(FIGURES_DIR / "2_3_scanvi_roc.png", dpi=300)
 plt.close()
 
 print("Saved scANVI plots.")
