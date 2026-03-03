@@ -135,7 +135,7 @@ for ax, metric in zip(axes, ["n_genes_by_counts", "total_counts"]):
     sc.pl.violin(braun_dataset, metric, jitter=False, show=False, ax=ax)
     ax.set_title(f"Dataset-wide — {metric}")
 plt.tight_layout()
-plt.savefig("1_1_qc_dataset_wide.png", dpi=100)
+plt.savefig("1_1_qc_dataset_wide.png", dpi=600)
 plt.close()
 
 # Per-batch QC violin
@@ -145,10 +145,11 @@ sc.pl.violin(
     groupby="batch",
     rotation=45,
     show=False,
+    figsize=(16, 6),
 )
 plt.title("Genes expressed per batch")
 plt.tight_layout()
-plt.savefig("1_1_qc_per_batch_genes.png", dpi=100)
+plt.savefig("1_1_qc_per_batch_genes.png", dpi=600)
 plt.close()
 
 sc.pl.violin(
@@ -157,10 +158,11 @@ sc.pl.violin(
     groupby="batch",
     rotation=45,
     show=False,
+    figsize=(16, 6),
 )
 plt.title("Total counts per batch")
 plt.tight_layout()
-plt.savefig("1_1_qc_per_batch_counts.png", dpi=100)
+plt.savefig("1_1_qc_per_batch_counts.png", dpi=600)
 plt.close()
 
 # Per-celltype QC violin
@@ -170,10 +172,11 @@ sc.pl.violin(
     groupby="celltype",
     rotation=45,
     show=False,
+    figsize=(22, 6),
 )
 plt.title("Genes expressed per cell type")
 plt.tight_layout()
-plt.savefig("1_1_qc_per_celltype_genes.png", dpi=100)
+plt.savefig("1_1_qc_per_celltype_genes.png", dpi=600)
 plt.close()
 
 sc.pl.violin(
@@ -182,10 +185,11 @@ sc.pl.violin(
     groupby="celltype",
     rotation=45,
     show=False,
+    figsize=(22, 6),
 )
 plt.title("Total counts per cell type")
 plt.tight_layout()
-plt.savefig("1_1_qc_per_celltype_counts.png", dpi=100)
+plt.savefig("1_1_qc_per_celltype_counts.png", dpi=600)
 plt.close()
 
 print("Saved QC plots.")
@@ -293,18 +297,18 @@ print(f"PCA+kNN  Accuracy: {acc_knn:.4f}  |  Weighted F1: {f1_knn:.4f}")
 # Confusion matrix
 classes = knn.classes_
 cm = confusion_matrix(y_test, y_pred_knn, labels=classes)
-fig, ax = plt.subplots(figsize=(12, 10))
+fig, ax = plt.subplots(figsize=(22, 12))
 disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=classes)
 disp.plot(ax=ax, xticks_rotation=90, colorbar=False, cmap="Blues")
 ax.set_title("PCA+kNN Confusion Matrix (unlabeled cells)")
 plt.tight_layout()
-plt.savefig("1_3_knn_confusion_matrix.png", dpi=100)
+plt.savefig("1_3_knn_confusion_matrix.png", dpi=600)
 plt.close()
 
 # ROC curves (macro OvR)
 classes_list = list(classes)
 y_test_bin = label_binarize(y_test, classes=classes_list)
-fig, ax = plt.subplots(figsize=(8, 6))
+fig, ax = plt.subplots(figsize=(16, 12))
 for i, cls in enumerate(classes_list):
     if y_test_bin[:, i].sum() == 0:
         continue
@@ -317,7 +321,7 @@ ax.set_ylabel("TPR")
 ax.set_title("PCA+kNN ROC Curves (unlabeled cells)")
 ax.legend(bbox_to_anchor=(1.05, 1), loc="upper left", fontsize=7)
 plt.tight_layout()
-plt.savefig("1_3_knn_roc.png", dpi=100)
+plt.savefig("1_3_knn_roc.png", dpi=600)
 plt.close()
 
 # UMAP
@@ -336,9 +340,9 @@ for color_key, fname, title in [
     ("n_genes_by_counts", "1_3_umap_ngenes.png", "n_genes_by_counts"),
     ("total_counts", "1_3_umap_counts.png", "total_counts"),
 ]:
-    sc.pl.umap(adata_cl, color=color_key, title=title, show=False)
+    sc.pl.umap(adata_cl, color=color_key, title=title, show=False, figsize=(16, 12))
     plt.tight_layout()
-    plt.savefig(fname, dpi=100)
+    plt.savefig(fname, dpi=600)
     plt.close()
 
 print("Saved PCA+kNN plots.")
@@ -354,8 +358,10 @@ print("=" * 70)
 from torch.utils.data import DataLoader, TensorDataset
 
 N_HVG = 1000
-sc.pp.highly_variable_genes(adata_cl, n_top_genes=N_HVG, batch_key="batch")
-adata_mlp = adata_cl[:, adata_cl.var["highly_variable"]].copy()
+_adata_hvg = adata_cl.copy()
+sc.pp.highly_variable_genes(_adata_hvg, n_top_genes=N_HVG, batch_key="batch")
+adata_mlp = adata_cl[:, _adata_hvg.var["highly_variable"]].copy()
+del _adata_hvg
 
 X_mlp_labeled = adata_mlp[labeled_mask].X
 X_mlp_unlabeled = adata_mlp[~labeled_mask].X
@@ -463,7 +469,7 @@ ax.set_ylabel("Cross-Entropy Loss")
 ax.set_title("MLP Training/Validation Loss")
 ax.legend()
 plt.tight_layout()
-plt.savefig("1_4_mlp_loss_curves.png", dpi=100)
+plt.savefig("1_4_mlp_loss_curves.png", dpi=600)
 plt.close()
 
 # Predict on masked cells
@@ -480,18 +486,18 @@ print(f"MLP  Accuracy: {acc_mlp:.4f}  |  Weighted F1: {f1_mlp:.4f}")
 
 # Confusion matrix
 cm_mlp = confusion_matrix(y_test_str, y_pred_mlp, labels=le.classes_)
-fig, ax = plt.subplots(figsize=(12, 10))
+fig, ax = plt.subplots(figsize=(22, 12))
 ConfusionMatrixDisplay(cm_mlp, display_labels=le.classes_).plot(
     ax=ax, xticks_rotation=90, colorbar=False, cmap="Blues"
 )
 ax.set_title("MLP Confusion Matrix (unlabeled cells)")
 plt.tight_layout()
-plt.savefig("1_4_mlp_confusion_matrix.png", dpi=100)
+plt.savefig("1_4_mlp_confusion_matrix.png", dpi=600)
 plt.close()
 
 # ROC curves
 y_test_bin_mlp = label_binarize(y_test_str, classes=list(le.classes_))
-fig, ax = plt.subplots(figsize=(8, 6))
+fig, ax = plt.subplots(figsize=(16, 12))
 for i, cls in enumerate(le.classes_):
     if y_test_bin_mlp[:, i].sum() == 0:
         continue
@@ -504,7 +510,7 @@ ax.set_ylabel("TPR")
 ax.set_title("MLP ROC Curves (unlabeled cells)")
 ax.legend(bbox_to_anchor=(1.05, 1), loc="upper left", fontsize=7)
 plt.tight_layout()
-plt.savefig("1_4_mlp_roc.png", dpi=100)
+plt.savefig("1_4_mlp_roc.png", dpi=600)
 plt.close()
 
 print("\n--- Architecture summary ---")
@@ -590,7 +596,7 @@ ax.set_ylabel("MSE")
 ax.set_title("Autoencoder Reconstruction Loss")
 ax.legend()
 plt.tight_layout()
-plt.savefig("2_1_ae_loss.png", dpi=100)
+plt.savefig("2_1_ae_loss.png", dpi=600)
 plt.close()
 
 # Extract latent embeddings
@@ -610,9 +616,9 @@ for color_key, fname, title in [
     ("celltype_ground_truth", "2_1_umap_ae_celltype.png", "AE latent — cell type"),
     ("batch", "2_1_umap_ae_batch.png", "AE latent — batch"),
 ]:
-    sc.pl.umap(adata_ae, color=color_key, title=title, show=False)
+    sc.pl.umap(adata_ae, color=color_key, title=title, show=False, figsize=(16, 12))
     plt.tight_layout()
-    plt.savefig(fname, dpi=100)
+    plt.savefig(fname, dpi=600)
     plt.close()
 
 # kNN on AE latent for the masked cells
@@ -679,9 +685,9 @@ for color_key, fname, title in [
     ("batch", "2_2_umap_scvi_batch.png", "scVI latent — batch"),
     ("celltype_ground_truth", "2_2_umap_scvi_celltype.png", "scVI latent — cell type"),
 ]:
-    sc.pl.umap(adata_scvi, color=color_key, title=title, show=False)
+    sc.pl.umap(adata_scvi, color=color_key, title=title, show=False, figsize=(16, 12))
     plt.tight_layout()
-    plt.savefig(fname, dpi=100)
+    plt.savefig(fname, dpi=600)
     plt.close()
 
 print("Saved scVI UMAP plots.")
@@ -730,9 +736,9 @@ for color_key, fname, title in [
     ("celltype_ground_truth", "2_3_umap_scanvi_truth.png", "scANVI — ground truth"),
     ("batch", "2_3_umap_scanvi_batch.png", "scANVI — batch"),
 ]:
-    sc.pl.umap(adata_scvi, color=color_key, title=title, show=False)
+    sc.pl.umap(adata_scvi, color=color_key, title=title, show=False, figsize=(16, 12))
     plt.tight_layout()
-    plt.savefig(fname, dpi=100)
+    plt.savefig(fname, dpi=600)
     plt.close()
 
 # Prediction-confidence violin — choose a cell type with enough cells
@@ -749,7 +755,7 @@ sc.pl.violin(
 )
 plt.title("scANVI prediction confidence per predicted cell type")
 plt.tight_layout()
-plt.savefig("2_3_scanvi_confidence_violin.png", dpi=100)
+plt.savefig("2_3_scanvi_confidence_violin.png", dpi=600)
 plt.close()
 
 # Evaluate on the masked (unlabeled) cells
@@ -760,6 +766,29 @@ y_pred_scanvi = adata_scvi.obs.loc[unlabeled_idx, "scanvi_predictions"].values
 acc_scanvi = accuracy_score(y_true_scanvi, y_pred_scanvi)
 f1_scanvi = f1_score(y_true_scanvi, y_pred_scanvi, average="weighted", zero_division=0)
 print(f"scANVI  Accuracy: {acc_scanvi:.4f}  |  Weighted F1: {f1_scanvi:.4f}")
+
+# scANVI ROC curves (required by 2.3 spec)
+classes_scanvi = scanvi_probs.columns.tolist()
+y_true_scanvi_bin = label_binarize(y_true_scanvi, classes=classes_scanvi)
+prob_matrix = scanvi_probs.loc[unlabeled_idx].values
+fig, ax = plt.subplots(figsize=(16, 12))
+for i, cls in enumerate(classes_scanvi):
+    if i >= y_true_scanvi_bin.shape[1]:
+        continue
+    if y_true_scanvi_bin[:, i].sum() == 0:
+        continue
+    fpr, tpr, _ = roc_curve(y_true_scanvi_bin[:, i], prob_matrix[:, i])
+    auc_val = roc_auc_score(y_true_scanvi_bin[:, i], prob_matrix[:, i])
+    ax.plot(fpr, tpr, lw=1, label=f"{cls} (AUC={auc_val:.2f})")
+ax.plot([0, 1], [0, 1], "k--")
+ax.set_xlabel("FPR")
+ax.set_ylabel("TPR")
+ax.set_title("scANVI ROC Curves (unlabeled cells)")
+ax.legend(bbox_to_anchor=(1.05, 1), loc="upper left", fontsize=7)
+plt.tight_layout()
+plt.savefig("2_3_scanvi_roc.png", dpi=600)
+plt.close()
+
 print("Saved scANVI plots.")
 
 # =============================================================================
@@ -779,23 +808,41 @@ if TEST_PATH.exists():
     sc.pp.normalize_total(adata_test_cl, target_sum=1e4)
     sc.pp.log1p(adata_test_cl)
 
-    # Use same HVGs as the training PCA object (intersection)
+    # Common genes between test and training HVG subset
     common_genes_cl = adata_test_cl.var_names.intersection(adata_cl.var_names)
     adata_test_cl = adata_test_cl[:, common_genes_cl].copy()
-    adata_cl_common = adata_cl[:, common_genes_cl].copy()
 
-    sc.pp.scale(adata_test_cl, max_value=10)
-    sc.tl.pca(adata_test_cl, svd_solver="arpack", random_state=SEED)
+    # Rebuild training data on common genes with fresh scale+PCA so that
+    # the embedding space is consistent between train and test projections.
+    # (adata_cl.X was scaled on 2000 genes; we need per-gene stats specifically
+    # for common_genes_cl to correctly centre/scale the test data.)
+    _tr_log = braun_dataset.copy()
+    sc.pp.normalize_total(_tr_log, target_sum=1e4)
+    sc.pp.log1p(_tr_log)
+    _tr_log = _tr_log[:, common_genes_cl].copy()
+    sc.pp.scale(_tr_log, max_value=10)          # stores mean/std in .var
+    sc.tl.pca(_tr_log, svd_solver="arpack", random_state=SEED)
 
-    # Refit kNN on labeled cells from training using common genes
-    X_train_test = adata_cl_common[labeled_mask].obsm["X_pca"]
+    # Project test data using TRAINING mean, std, and PCA components
+    pca_components = _tr_log.varm["PCs"]        # (n_common_genes, n_pcs)
+    train_mean = _tr_log.var["mean"].values
+    train_std  = _tr_log.var["std"].values
+
+    X_te = adata_test_cl.X
+    if hasattr(X_te, "toarray"):
+        X_te = X_te.toarray()
+    X_te_scaled = (X_te - train_mean) / np.where(train_std == 0, 1.0, train_std)
+    np.clip(X_te_scaled, -10, 10, out=X_te_scaled)
+    X_test_proj = X_te_scaled @ pca_components
+
+    # Fit kNN on labeled training cells in the consistent common-gene PCA space
     knn_test = KNeighborsClassifier(n_neighbors=15, weights="distance", n_jobs=-1)
     knn_test.fit(
-        X_train_test,
-        adata_cl_common[labeled_mask].obs["celltype_ground_truth"].values,
+        _tr_log[labeled_mask].obsm["X_pca"],
+        _tr_log[labeled_mask].obs["celltype_ground_truth"].values,
     )
-    X_test_proj = adata_test_cl.obsm["X_pca"]
     y_pred_knn_test = knn_test.predict(X_test_proj)
+    del _tr_log
 
     # --- MLP on test set ---
     # Apply the same normalization and log-transform as training before selecting HVGs
