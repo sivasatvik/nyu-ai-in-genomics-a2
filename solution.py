@@ -891,13 +891,24 @@ if TEST_PATH.exists():
     y_pred_ae_test = knn_ae.predict(Z_test_ae)
 
     # --- scANVI on test set ---
-    # Ensure the test AnnData has the same obs columns the model was trained with
-    # (batch_key="batch", labels_key="celltype_scvi").  Do NOT call setup_anndata
-    # here: that would create an independent registry with different batch/label
-    # encodings, causing predict() to look up wrong indices.  Instead, let the
-    # model's internal _validate_anndata transfer mechanism map the test adata
-    # against the training registry automatically.
-    adata_test_scanvi = adata_test.copy()
+    # scANVI requires the full training gene set (adata_scvi.var_names, 25k+ genes).
+    # test.h5ad may only contain a subset; pad missing genes with zeros.
+    train_var_names = adata_scvi.var_names
+    common_genes_scanvi = adata_test.var_names.intersection(train_var_names)
+
+    X_test_raw = adata_test[:, common_genes_scanvi].X
+    if hasattr(X_test_raw, "toarray"):
+        X_test_raw = X_test_raw.toarray()
+
+    X_aligned = np.zeros((adata_test.n_obs, len(train_var_names)), dtype=np.float32)
+    gene_positions = train_var_names.get_indexer(common_genes_scanvi)
+    X_aligned[:, gene_positions] = X_test_raw
+
+    adata_test_scanvi = anndata.AnnData(
+        X=X_aligned,
+        obs=adata_test.obs.copy(),
+        var=pd.DataFrame(index=train_var_names),
+    )
     if "batch" not in adata_test_scanvi.obs.columns:
         adata_test_scanvi.obs["batch"] = "test"
     adata_test_scanvi.obs["celltype_scvi"] = "Unknown"
