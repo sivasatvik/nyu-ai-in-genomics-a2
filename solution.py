@@ -89,7 +89,7 @@ braun_dataset = sc.read_h5ad(DATA_PATH)
 print(braun_dataset)
 print("\n.obs columns:", braun_dataset.obs.columns.tolist())
 print("\nFirst few rows of .obs:")
-print(braun_dataset.obs.head())
+print(braun_dataset.obs.head().to_string())
 
 # --- Optionally subsample to ≤20 000 cells for speed ---
 MAX_CELLS = 20_000
