@@ -15,6 +15,7 @@
 #     2.5  Interpretability via Captum Integrated Gradients
 # =============================================================================
 
+import pickle
 import random
 import sys
 import warnings
@@ -54,6 +55,8 @@ DATA_PATH = Path("braun_dataset.h5ad")
 TEST_PATH = Path("test.h5ad")
 FIGURES_DIR = Path("figures")
 FIGURES_DIR.mkdir(exist_ok=True)
+CKPT_DIR = Path("checkpoints")
+CKPT_DIR.mkdir(exist_ok=True)
 
 # --------------------------------------------------------------------------- #
 # Download datasets from Google Drive (skipped if files already exist)
@@ -62,7 +65,7 @@ import gdown  # noqa: E402  (imported here to keep library block together)
 
 _GDRIVE_URLS = {
     DATA_PATH: "https://drive.google.com/uc?id=1ZZWbVq-qwGUr76WSecPUrKiyLJP4VVtz",
-    TEST_PATH: "https://drive.google.com/uc?id=1dvEJ46a5RJyxaXxo_p-Bj0BwN8B7vppv",
+    TEST_PATH: "https://drive.google.com/uc?id=1uZkdqE5df-0Mul8VFahCyQoDjXJ-0IFP",
 }
 
 for _path, _url in _GDRIVE_URLS.items():
@@ -437,31 +440,43 @@ class MLP(nn.Module):
 
 mlp = MLP(N_HVG, n_classes).to(device)
 criterion = nn.CrossEntropyLoss()
-optimizer = torch.optim.AdamW(mlp.parameters(), lr=1e-3, weight_decay=1e-4)
-scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=50)
 
-N_EPOCHS = 50
-train_losses, val_losses = [], []
+_mlp_ckpt = CKPT_DIR / "mlp.pt"
 
-for epoch in range(N_EPOCHS):
-    mlp.train()
-    epoch_loss = 0.0
-    for Xb, yb in train_loader:
-        optimizer.zero_grad()
-        loss = criterion(mlp(Xb), yb)
-        loss.backward()
-        optimizer.step()
-        epoch_loss += loss.item() * len(yb)
-    train_losses.append(epoch_loss / len(y_tr))
-
+if _mlp_ckpt.exists():
+    print(f"  Loading MLP from checkpoint: {_mlp_ckpt}")
+    mlp.load_state_dict(torch.load(_mlp_ckpt, map_location=device))
     mlp.eval()
-    with torch.no_grad():
-        val_loss = criterion(mlp(X_val_t), y_val_t).item()
-    val_losses.append(val_loss)
-    scheduler.step()
+    train_losses, val_losses = [], []
+else:
+    optimizer = torch.optim.AdamW(mlp.parameters(), lr=1e-3, weight_decay=1e-4)
+    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=50)
 
-    if (epoch + 1) % 10 == 0:
-        print(f"  Epoch {epoch+1:3d}/{N_EPOCHS} — train_loss={train_losses[-1]:.4f}  val_loss={val_loss:.4f}")
+    N_EPOCHS = 50
+    train_losses, val_losses = [], []
+
+    for epoch in range(N_EPOCHS):
+        mlp.train()
+        epoch_loss = 0.0
+        for Xb, yb in train_loader:
+            optimizer.zero_grad()
+            loss = criterion(mlp(Xb), yb)
+            loss.backward()
+            optimizer.step()
+            epoch_loss += loss.item() * len(yb)
+        train_losses.append(epoch_loss / len(y_tr))
+
+        mlp.eval()
+        with torch.no_grad():
+            val_loss = criterion(mlp(X_val_t), y_val_t).item()
+        val_losses.append(val_loss)
+        scheduler.step()
+
+        if (epoch + 1) % 10 == 0:
+            print(f"  Epoch {epoch+1:3d}/{N_EPOCHS} — train_loss={train_losses[-1]:.4f}  val_loss={val_loss:.4f}")
+
+    torch.save(mlp.state_dict(), _mlp_ckpt)
+    print(f"  Saved MLP checkpoint → {_mlp_ckpt}")
 
 # Loss curves
 fig, ax = plt.subplots(figsize=(7, 4))
@@ -572,24 +587,46 @@ ae_loader = DataLoader(
 )
 
 ae_model = Autoencoder(AE_INPUT, AE_HIDDEN, LATENT_DIM).to(device)
-ae_optimizer = torch.optim.Adam(ae_model.parameters(), lr=1e-3)
-ae_criterion = nn.MSELoss()
 
-AE_EPOCHS = 50
-ae_losses = []
-for epoch in range(AE_EPOCHS):
-    ae_model.train()
-    ep_loss = 0.0
-    for (Xb,) in ae_loader:
-        ae_optimizer.zero_grad()
-        recon, _ = ae_model(Xb)
-        loss = ae_criterion(recon, Xb)
-        loss.backward()
-        ae_optimizer.step()
-        ep_loss += loss.item() * len(Xb)
-    ae_losses.append(ep_loss / len(X_ae_all))
-    if (epoch + 1) % 10 == 0:
-        print(f"  AE Epoch {epoch+1:3d}/{AE_EPOCHS} — loss={ae_losses[-1]:.6f}")
+_ae_ckpt     = CKPT_DIR / "autoencoder.pt"
+_ae_latent   = CKPT_DIR / "ae_latent.npy"
+
+if _ae_ckpt.exists() and _ae_latent.exists():
+    print(f"  Loading Autoencoder from checkpoint: {_ae_ckpt}")
+    ae_model.load_state_dict(torch.load(_ae_ckpt, map_location=device))
+    ae_model.eval()
+    ae_losses = []
+    Z_all = np.load(_ae_latent)
+else:
+    ae_optimizer = torch.optim.Adam(ae_model.parameters(), lr=1e-3)
+    ae_criterion = nn.MSELoss()
+
+    AE_EPOCHS = 50
+    ae_losses = []
+    for epoch in range(AE_EPOCHS):
+        ae_model.train()
+        ep_loss = 0.0
+        for (Xb,) in ae_loader:
+            ae_optimizer.zero_grad()
+            recon, _ = ae_model(Xb)
+            loss = ae_criterion(recon, Xb)
+            loss.backward()
+            ae_optimizer.step()
+            ep_loss += loss.item() * len(Xb)
+        ae_losses.append(ep_loss / len(X_ae_all))
+        if (epoch + 1) % 10 == 0:
+            print(f"  AE Epoch {epoch+1:3d}/{AE_EPOCHS} — loss={ae_losses[-1]:.6f}")
+
+    # Extract latent embeddings
+    ae_model.eval()
+    with torch.no_grad():
+        _, Z_all = ae_model(X_ae_t)
+    Z_all = Z_all.cpu().numpy()
+
+    torch.save(ae_model.state_dict(), _ae_ckpt)
+    np.save(_ae_latent, Z_all)
+    print(f"  Saved AE checkpoint → {_ae_ckpt}")
+    print(f"  Saved AE latent     → {_ae_latent}")
 
 # Loss curve
 fig, ax = plt.subplots(figsize=(7, 4))
@@ -601,12 +638,6 @@ ax.legend()
 plt.tight_layout()
 plt.savefig(FIGURES_DIR / "2_1_ae_loss.png", dpi=300)
 plt.close()
-
-# Extract latent embeddings
-ae_model.eval()
-with torch.no_grad():
-    _, Z_all = ae_model(X_ae_t)
-Z_all = Z_all.cpu().numpy()
 
 # Store in AnnData for UMAP
 adata_ae = adata_mlp.copy()
@@ -663,20 +694,28 @@ scvi.model.SCVI.setup_anndata(
     labels_key="celltype_scvi",
 )
 
-vae = scvi.model.SCVI(
-    adata_scvi,
-    n_latent=20,
-    n_hidden=128,
-    n_layers=2,
-    gene_likelihood="nb",
-)
-vae.train(
-    max_epochs=100,
-    train_size=0.9,
-    validation_size=0.1,
-    early_stopping=True,
-    plan_kwargs={"lr": 1e-3},
-)
+_scvi_ckpt = CKPT_DIR / "scvi_model"
+
+if _scvi_ckpt.exists():
+    print(f"  Loading scVI model from checkpoint: {_scvi_ckpt}")
+    vae = scvi.model.SCVI.load(str(_scvi_ckpt), adata=adata_scvi)
+else:
+    vae = scvi.model.SCVI(
+        adata_scvi,
+        n_latent=20,
+        n_hidden=128,
+        n_layers=2,
+        gene_likelihood="nb",
+    )
+    vae.train(
+        max_epochs=100,
+        train_size=0.9,
+        validation_size=0.1,
+        early_stopping=True,
+        plan_kwargs={"lr": 1e-3},
+    )
+    vae.save(str(_scvi_ckpt), overwrite=True)
+    print(f"  Saved scVI checkpoint → {_scvi_ckpt}")
 
 # Extract scVI latent
 Z_scvi = vae.get_latent_representation()
@@ -710,17 +749,25 @@ print("=" * 70)
 #  - max_epochs=20 for fine-tuning (scANVI tutorial default)
 #  - unlabeled_category="Unknown" matches the mask applied in 1.2
 
-scanvi_model = scvi.model.SCANVI.from_scvi_model(
-    vae,
-    unlabeled_category="Unknown",
-    labels_key="celltype_scvi",
-)
-scanvi_model.train(
-    max_epochs=20,
-    n_samples_per_label=100,
-    train_size=0.9,
-    validation_size=0.1,
-)
+_scanvi_ckpt = CKPT_DIR / "scanvi_model"
+
+if _scanvi_ckpt.exists():
+    print(f"  Loading scANVI model from checkpoint: {_scanvi_ckpt}")
+    scanvi_model = scvi.model.SCANVI.load(str(_scanvi_ckpt), adata=adata_scvi)
+else:
+    scanvi_model = scvi.model.SCANVI.from_scvi_model(
+        vae,
+        unlabeled_category="Unknown",
+        labels_key="celltype_scvi",
+    )
+    scanvi_model.train(
+        max_epochs=20,
+        n_samples_per_label=100,
+        train_size=0.9,
+        validation_size=0.1,
+    )
+    scanvi_model.save(str(_scanvi_ckpt), overwrite=True)
+    print(f"  Saved scANVI checkpoint → {_scanvi_ckpt}")
 
 # Predictions and probabilities
 scanvi_preds = scanvi_model.predict(soft=False)
