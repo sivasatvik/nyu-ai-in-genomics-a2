@@ -366,7 +366,7 @@ from torch.utils.data import DataLoader, TensorDataset
 
 N_HVG = 1000
 _adata_hvg = adata_cl.copy()
-sc.pp.highly_variable_genes(_adata_hvg, n_top_genes=N_HVG, batch_key="batch")
+sc.pp.highly_variable_genes(_adata_hvg, n_top_genes=N_HVG)
 adata_mlp = adata_cl[:, _adata_hvg.var["highly_variable"]].copy()
 del _adata_hvg
 
@@ -448,13 +448,19 @@ if _mlp_ckpt.exists():
     print(f"  Loading MLP from checkpoint: {_mlp_ckpt}")
     mlp.load_state_dict(torch.load(_mlp_ckpt, map_location=device))
     mlp.eval()
-    train_losses, val_losses = [], []
+    train_losses, val_losses, train_accs, val_accs = [], [], [], []
 else:
     optimizer = torch.optim.AdamW(mlp.parameters(), lr=1e-3, weight_decay=1e-4)
-    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=50)
+    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+        optimizer, mode="min", factor=0.5, patience=10
+    )
 
-    N_EPOCHS = 2000
-    train_losses, val_losses = [], []
+    N_EPOCHS = 1000
+    PATIENCE = 30
+    train_losses, val_losses, train_accs, val_accs = [], [], [], []
+    best_val_loss = float("inf")
+    best_state = None
+    epochs_no_improve = 0
 
     for epoch in range(N_EPOCHS):
         mlp.train()
@@ -469,24 +475,52 @@ else:
 
         mlp.eval()
         with torch.no_grad():
-            val_loss = criterion(mlp(X_val_t), y_val_t).item()
+            tr_logits = mlp(X_tr_t)
+            val_logits = mlp(X_val_t)
+            val_loss = criterion(val_logits, y_val_t).item()
+            tr_pred = tr_logits.argmax(dim=1).cpu().numpy()
+            val_pred = val_logits.argmax(dim=1).cpu().numpy()
         val_losses.append(val_loss)
-        scheduler.step()
+        train_accs.append(f1_score(y_tr, tr_pred, average="weighted", zero_division=0))
+        val_accs.append(f1_score(y_val, val_pred, average="weighted", zero_division=0))
+
+        scheduler.step(val_loss)
+
+        if val_loss < best_val_loss:
+            best_val_loss = val_loss
+            best_state = {k: v.clone() for k, v in mlp.state_dict().items()}
+            epochs_no_improve = 0
+        else:
+            epochs_no_improve += 1
+            if epochs_no_improve >= PATIENCE:
+                print(f"  Early stopping at epoch {epoch + 1}")
+                break
 
         if (epoch + 1) % 100 == 0:
-            print(f"  Epoch {epoch+1:3d}/{N_EPOCHS} — train_loss={train_losses[-1]:.4f}  val_loss={val_loss:.4f}")
+            print(
+                f"  Epoch {epoch+1:4d}/{N_EPOCHS} — "
+                f"train_loss={train_losses[-1]:.4f}  val_loss={val_loss:.4f}  "
+                f"val_f1={val_accs[-1]:.4f}"
+            )
 
+    mlp.load_state_dict(best_state)
     torch.save(mlp.state_dict(), _mlp_ckpt)
     print(f"  Saved MLP checkpoint → {_mlp_ckpt}")
 
-# Loss curves
-fig, ax = plt.subplots(figsize=(7, 4))
-ax.plot(train_losses, label="Train")
-ax.plot(val_losses, label="Val")
-ax.set_xlabel("Epoch")
-ax.set_ylabel("Cross-Entropy Loss")
-ax.set_title("MLP Training/Validation Loss")
-ax.legend()
+# Loss and accuracy curves
+fig, axes = plt.subplots(1, 2, figsize=(12, 4))
+axes[0].plot(train_losses, label="Train")
+axes[0].plot(val_losses, label="Val")
+axes[0].set_xlabel("Epoch")
+axes[0].set_ylabel("Cross-Entropy Loss")
+axes[0].set_title("MLP Loss")
+axes[0].legend()
+axes[1].plot(train_accs, label="Train")
+axes[1].plot(val_accs, label="Val")
+axes[1].set_xlabel("Epoch")
+axes[1].set_ylabel("Weighted F1")
+axes[1].set_title("MLP Weighted F1")
+axes[1].legend()
 plt.tight_layout()
 plt.savefig(FIGURES_DIR / "1_4_mlp_loss_curves.png", dpi=100)
 plt.close()
@@ -551,28 +585,33 @@ print("\n" + "=" * 70)
 print("2.1  Deep Autoencoder Baseline")
 print("=" * 70)
 
-LATENT_DIM = 32
-AE_HIDDEN = 256
+LATENT_DIM = 64
 AE_INPUT = N_HVG
 
 
 class Autoencoder(nn.Module):
-    """Deterministic autoencoder: input→256→latent→256→input."""
+    """Deep autoencoder: 1000→256→128→64→128→256→1000."""
 
-    def __init__(self, in_dim, hidden_dim, latent_dim):
+    def __init__(self, in_dim, latent_dim):
         super().__init__()
         self.encoder = nn.Sequential(
-            nn.Linear(in_dim, hidden_dim),
-            nn.BatchNorm1d(hidden_dim),
+            nn.Linear(in_dim, 256),
+            nn.BatchNorm1d(256),
             nn.ReLU(),
             nn.Dropout(0.1),
-            nn.Linear(hidden_dim, latent_dim),
+            nn.Linear(256, 128),
+            nn.BatchNorm1d(128),
+            nn.ReLU(),
+            nn.Linear(128, latent_dim),
         )
         self.decoder = nn.Sequential(
-            nn.Linear(latent_dim, hidden_dim),
-            nn.BatchNorm1d(hidden_dim),
+            nn.Linear(latent_dim, 128),
+            nn.BatchNorm1d(128),
             nn.ReLU(),
-            nn.Linear(hidden_dim, in_dim),
+            nn.Linear(128, 256),
+            nn.BatchNorm1d(256),
+            nn.ReLU(),
+            nn.Linear(256, in_dim),
         )
 
     def forward(self, x):
@@ -592,7 +631,7 @@ ae_loader = DataLoader(
     shuffle=True,
 )
 
-ae_model = Autoencoder(AE_INPUT, AE_HIDDEN, LATENT_DIM).to(device)
+ae_model = Autoencoder(AE_INPUT, LATENT_DIM).to(device)
 
 _ae_ckpt     = CKPT_DIR / "autoencoder.pt"
 _ae_latent   = CKPT_DIR / "ae_latent.npy"
