@@ -29,6 +29,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import scanpy as sc
+import seaborn as sns
 import scvi
 import torch
 import torch.nn as nn
@@ -175,7 +176,7 @@ sc.pl.violin(
     braun_dataset,
     "n_genes_by_counts",
     groupby="celltype",
-    rotation=45,
+    rotation=90,
     show=False,
 )
 plt.gcf().set_size_inches(22, 12)
@@ -188,7 +189,7 @@ sc.pl.violin(
     braun_dataset,
     "total_counts",
     groupby="celltype",
-    rotation=45,
+    rotation=90,
     show=False,
 )
 plt.gcf().set_size_inches(22, 12)
@@ -251,9 +252,7 @@ print("1.3  PCA + kNN Baseline and UMAPs")
 print("=" * 70)
 
 from sklearn.metrics import (
-    ConfusionMatrixDisplay,
     accuracy_score,
-    confusion_matrix,
     f1_score,
     roc_auc_score,
     roc_curve,
@@ -299,19 +298,21 @@ acc_knn = accuracy_score(y_test, y_pred_knn)
 f1_knn = f1_score(y_test, y_pred_knn, average="weighted", zero_division=0)
 print(f"PCA+kNN  Accuracy: {acc_knn:.4f}  |  Weighted F1: {f1_knn:.4f}")
 
-# Confusion matrix
-classes = knn.classes_
-cm = confusion_matrix(y_test, y_pred_knn, labels=classes)
-fig, ax = plt.subplots(figsize=(22, 12))
-disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=classes)
-disp.plot(ax=ax, xticks_rotation=90, colorbar=False, cmap="Blues")
+# Confusion matrix (scanpy + seaborn)
+_obs_knn = pd.DataFrame({"true": y_test, "pred": y_pred_knn})
+cmtx_knn = sc.metrics.confusion_matrix("true", "pred", _obs_knn)
+fig, ax = plt.subplots(figsize=(16, 14))
+sns.heatmap(cmtx_knn, annot=False, cmap="Blues", linewidths=0.3, ax=ax)
 ax.set_title("PCA+kNN Confusion Matrix (unlabeled cells)")
+ax.set_xlabel("Predicted")
+ax.set_ylabel("True")
+plt.xticks(rotation=90)
 plt.tight_layout()
 plt.savefig(FIGURES_DIR / "1_3_knn_confusion_matrix.png", dpi=100)
 plt.close()
 
 # ROC curves (macro OvR)
-classes_list = list(classes)
+classes_list = list(knn.classes_)
 y_test_bin = label_binarize(y_test, classes=classes_list)
 fig, ax = plt.subplots(figsize=(16, 12))
 for i, cls in enumerate(classes_list):
@@ -502,13 +503,15 @@ acc_mlp = accuracy_score(y_test_str, y_pred_mlp)
 f1_mlp = f1_score(y_test_str, y_pred_mlp, average="weighted", zero_division=0)
 print(f"MLP  Accuracy: {acc_mlp:.4f}  |  Weighted F1: {f1_mlp:.4f}")
 
-# Confusion matrix
-cm_mlp = confusion_matrix(y_test_str, y_pred_mlp, labels=le.classes_)
-fig, ax = plt.subplots(figsize=(22, 12))
-ConfusionMatrixDisplay(cm_mlp, display_labels=le.classes_).plot(
-    ax=ax, xticks_rotation=90, colorbar=False, cmap="Blues"
-)
+# Confusion matrix (scanpy + seaborn)
+_obs_mlp = pd.DataFrame({"true": y_test_str, "pred": y_pred_mlp})
+cmtx_mlp = sc.metrics.confusion_matrix("true", "pred", _obs_mlp)
+fig, ax = plt.subplots(figsize=(16, 14))
+sns.heatmap(cmtx_mlp, annot=False, cmap="Blues", linewidths=0.3, ax=ax)
 ax.set_title("MLP Confusion Matrix (unlabeled cells)")
+ax.set_xlabel("Predicted")
+ax.set_ylabel("True")
+plt.xticks(rotation=90)
 plt.tight_layout()
 plt.savefig(FIGURES_DIR / "1_4_mlp_confusion_matrix.png", dpi=100)
 plt.close()
@@ -806,7 +809,7 @@ sc.pl.violin(
     adata_scvi,
     "scanvi_confidence",
     groupby="scanvi_predictions",
-    rotation=45,
+    rotation=90,
     show=False,
 )
 plt.gcf().set_size_inches(16, 12)
