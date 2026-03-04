@@ -422,15 +422,15 @@ class MLP(nn.Module):
             nn.Linear(in_dim, 512),
             nn.BatchNorm1d(512),
             nn.ReLU(),
-            nn.Dropout(0.5),
+            nn.Dropout(0.3),
             nn.Linear(512, 256),
             nn.BatchNorm1d(256),
             nn.ReLU(),
-            nn.Dropout(0.4),
+            nn.Dropout(0.3),
             nn.Linear(256, 128),
             nn.BatchNorm1d(128),
             nn.ReLU(),
-            nn.Dropout(0.3),
+            nn.Dropout(0.2),
             nn.Linear(128, out_dim),
         )
 
@@ -439,14 +439,7 @@ class MLP(nn.Module):
 
 
 mlp = MLP(N_HVG, n_classes).to(device)
-
-# Class-weighted loss to handle imbalanced cell-type counts
-_class_counts = np.bincount(y_tr, minlength=n_classes).astype(float)
-_class_weights = torch.tensor(
-    1.0 / np.where(_class_counts == 0, 1.0, _class_counts), dtype=torch.float32
-).to(device)
-_class_weights = _class_weights / _class_weights.sum() * n_classes  # normalize
-criterion = nn.CrossEntropyLoss(weight=_class_weights)
+criterion = nn.CrossEntropyLoss()
 
 _mlp_ckpt = CKPT_DIR / "mlp.pt"
 
@@ -456,16 +449,11 @@ if _mlp_ckpt.exists():
     mlp.eval()
     train_losses, val_losses = [], []
 else:
-    optimizer = torch.optim.AdamW(mlp.parameters(), lr=1e-3, weight_decay=1e-3)
+    optimizer = torch.optim.AdamW(mlp.parameters(), lr=1e-3, weight_decay=1e-4)
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=50)
 
     N_EPOCHS = 50
     train_losses, val_losses = [], []
-
-    best_val_loss = float("inf")
-    best_weights = None
-    patience = 10
-    epochs_no_improve = 0
 
     for epoch in range(N_EPOCHS):
         mlp.train()
@@ -484,23 +472,8 @@ else:
         val_losses.append(val_loss)
         scheduler.step()
 
-        if val_loss < best_val_loss:
-            best_val_loss = val_loss
-            best_weights = {k: v.cpu().clone() for k, v in mlp.state_dict().items()}
-            epochs_no_improve = 0
-        else:
-            epochs_no_improve += 1
-
         if (epoch + 1) % 10 == 0:
-            print(f"  Epoch {epoch+1:3d}/{N_EPOCHS} — train_loss={train_losses[-1]:.4f}  val_loss={val_loss:.4f}  best={best_val_loss:.4f}")
-
-        if epochs_no_improve >= patience:
-            print(f"  Early stopping at epoch {epoch + 1} (no improvement for {patience} epochs)")
-            break
-
-    # Restore best weights
-    mlp.load_state_dict({k: v.to(device) for k, v in best_weights.items()})
-    mlp.eval()
+            print(f"  Epoch {epoch+1:3d}/{N_EPOCHS} — train_loss={train_losses[-1]:.4f}  val_loss={val_loss:.4f}")
 
     torch.save(mlp.state_dict(), _mlp_ckpt)
     print(f"  Saved MLP checkpoint → {_mlp_ckpt}")
