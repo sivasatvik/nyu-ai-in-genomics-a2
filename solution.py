@@ -942,9 +942,14 @@ if TEST_PATH.exists():
     if "batch" not in adata_test_scanvi.obs.columns:
         adata_test_scanvi.obs["batch"] = "test"
     adata_test_scanvi.obs["celltype_scvi"] = "Unknown"
-    # Extend the model's category registries to accept unseen batch/label values
+    # prepare_query_anndata aligns genes; load_query_data creates a properly
+    # registered query model instance that handles unseen batch categories
+    # without triggering the "extend_categories" validation error.
     scvi.model.SCANVI.prepare_query_anndata(adata_test_scanvi, scanvi_model)
-    scanvi_preds_test = scanvi_model.predict(adata_test_scanvi, soft=False)
+    _scanvi_query = scvi.model.SCANVI.load_query_data(
+        adata_test_scanvi, scanvi_model, freeze_dropout=True
+    )
+    scanvi_preds_test = _scanvi_query.predict()
     y_pred_scanvi_test = np.array(scanvi_preds_test)
 
     # Compile results if ground truth is available
