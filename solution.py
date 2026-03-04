@@ -179,7 +179,7 @@ sc.pl.violin(
     rotation=90,
     show=False,
 )
-plt.gcf().set_size_inches(22, 12)
+plt.gcf().set_size_inches(22, 16)
 plt.title("Genes expressed per cell type")
 plt.tight_layout()
 plt.savefig(FIGURES_DIR / "1_1_qc_per_celltype_genes.png", dpi=100)
@@ -192,7 +192,7 @@ sc.pl.violin(
     rotation=90,
     show=False,
 )
-plt.gcf().set_size_inches(22, 12)
+plt.gcf().set_size_inches(22, 16)
 plt.title("Total counts per cell type")
 plt.tight_layout()
 plt.savefig(FIGURES_DIR / "1_1_qc_per_celltype_counts.png", dpi=100)
@@ -453,7 +453,7 @@ else:
     optimizer = torch.optim.AdamW(mlp.parameters(), lr=1e-3, weight_decay=1e-4)
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=50)
 
-    N_EPOCHS = 50
+    N_EPOCHS = 2000
     train_losses, val_losses = [], []
 
     for epoch in range(N_EPOCHS):
@@ -473,7 +473,7 @@ else:
         val_losses.append(val_loss)
         scheduler.step()
 
-        if (epoch + 1) % 10 == 0:
+        if (epoch + 1) % 100 == 0:
             print(f"  Epoch {epoch+1:3d}/{N_EPOCHS} — train_loss={train_losses[-1]:.4f}  val_loss={val_loss:.4f}")
 
     torch.save(mlp.state_dict(), _mlp_ckpt)
@@ -607,7 +607,7 @@ else:
     ae_optimizer = torch.optim.Adam(ae_model.parameters(), lr=1e-3)
     ae_criterion = nn.MSELoss()
 
-    AE_EPOCHS = 50
+    AE_EPOCHS = 2000
     ae_losses = []
     for epoch in range(AE_EPOCHS):
         ae_model.train()
@@ -620,7 +620,7 @@ else:
             ae_optimizer.step()
             ep_loss += loss.item() * len(Xb)
         ae_losses.append(ep_loss / len(X_ae_all))
-        if (epoch + 1) % 10 == 0:
+        if (epoch + 100) % 10 == 0:
             print(f"  AE Epoch {epoch+1:3d}/{AE_EPOCHS} — loss={ae_losses[-1]:.6f}")
 
     # Extract latent embeddings
@@ -812,7 +812,7 @@ sc.pl.violin(
     rotation=90,
     show=False,
 )
-plt.gcf().set_size_inches(16, 12)
+plt.gcf().set_size_inches(16, 16)
 plt.title("scANVI prediction confidence per predicted cell type")
 plt.tight_layout()
 plt.savefig(FIGURES_DIR / "2_3_scanvi_confidence_violin.png", dpi=100)
