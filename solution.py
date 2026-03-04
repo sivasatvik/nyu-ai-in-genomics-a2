@@ -422,15 +422,15 @@ class MLP(nn.Module):
             nn.Linear(in_dim, 512),
             nn.BatchNorm1d(512),
             nn.ReLU(),
-            nn.Dropout(0.3),
+            nn.Dropout(0.5),
             nn.Linear(512, 256),
             nn.BatchNorm1d(256),
             nn.ReLU(),
-            nn.Dropout(0.3),
+            nn.Dropout(0.4),
             nn.Linear(256, 128),
             nn.BatchNorm1d(128),
             nn.ReLU(),
-            nn.Dropout(0.2),
+            nn.Dropout(0.3),
             nn.Linear(128, out_dim),
         )
 
@@ -439,7 +439,14 @@ class MLP(nn.Module):
 
 
 mlp = MLP(N_HVG, n_classes).to(device)
-criterion = nn.CrossEntropyLoss()
+
+# Class-weighted loss to handle imbalanced cell-type counts
+_class_counts = np.bincount(y_tr, minlength=n_classes).astype(float)
+_class_weights = torch.tensor(
+    1.0 / np.where(_class_counts == 0, 1.0, _class_counts), dtype=torch.float32
+).to(device)
+_class_weights = _class_weights / _class_weights.sum() * n_classes  # normalize
+criterion = nn.CrossEntropyLoss(weight=_class_weights)
 
 _mlp_ckpt = CKPT_DIR / "mlp.pt"
 
@@ -449,11 +456,16 @@ if _mlp_ckpt.exists():
     mlp.eval()
     train_losses, val_losses = [], []
 else:
-    optimizer = torch.optim.AdamW(mlp.parameters(), lr=1e-3, weight_decay=1e-4)
+    optimizer = torch.optim.AdamW(mlp.parameters(), lr=1e-3, weight_decay=1e-3)
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=50)
 
     N_EPOCHS = 50
     train_losses, val_losses = [], []
+
+    best_val_loss = float("inf")
+    best_weights = None
+    patience = 10
+    epochs_no_improve = 0
 
     for epoch in range(N_EPOCHS):
         mlp.train()
@@ -472,8 +484,23 @@ else:
         val_losses.append(val_loss)
         scheduler.step()
 
+        if val_loss < best_val_loss:
+            best_val_loss = val_loss
+            best_weights = {k: v.cpu().clone() for k, v in mlp.state_dict().items()}
+            epochs_no_improve = 0
+        else:
+            epochs_no_improve += 1
+
         if (epoch + 1) % 10 == 0:
-            print(f"  Epoch {epoch+1:3d}/{N_EPOCHS} — train_loss={train_losses[-1]:.4f}  val_loss={val_loss:.4f}")
+            print(f"  Epoch {epoch+1:3d}/{N_EPOCHS} — train_loss={train_losses[-1]:.4f}  val_loss={val_loss:.4f}  best={best_val_loss:.4f}")
+
+        if epochs_no_improve >= patience:
+            print(f"  Early stopping at epoch {epoch + 1} (no improvement for {patience} epochs)")
+            break
+
+    # Restore best weights
+    mlp.load_state_dict({k: v.to(device) for k, v in best_weights.items()})
+    mlp.eval()
 
     torch.save(mlp.state_dict(), _mlp_ckpt)
     print(f"  Saved MLP checkpoint → {_mlp_ckpt}")
@@ -938,29 +965,10 @@ if TEST_PATH.exists():
     y_pred_ae_test = knn_ae.predict(Z_test_ae)
 
     # --- scANVI on test set ---
-    # scANVI requires the full training gene set (adata_scvi.var_names, 25k+ genes).
-    # test.h5ad may only contain a subset; pad missing genes with zeros.
-    train_var_names = adata_scvi.var_names
-    common_genes_scanvi = adata_test.var_names.intersection(train_var_names)
-
-    X_test_raw = adata_test[:, common_genes_scanvi].X
-    if hasattr(X_test_raw, "toarray"):
-        X_test_raw = X_test_raw.toarray()
-
-    X_aligned = np.zeros((adata_test.n_obs, len(train_var_names)), dtype=np.float32)
-    gene_positions = train_var_names.get_indexer(common_genes_scanvi)
-    X_aligned[:, gene_positions] = X_test_raw
-
-    adata_test_scanvi = anndata.AnnData(
-        X=X_aligned,
-        obs=adata_test.obs.copy(),
-        var=pd.DataFrame(index=train_var_names),
-    )
+    adata_test_scanvi = adata_test.copy()
     if "batch" not in adata_test_scanvi.obs.columns:
         adata_test_scanvi.obs["batch"] = "test"
     adata_test_scanvi.obs["celltype_scvi"] = "Unknown"
-    # Extend the model's category registries to accept unseen batch/label values
-    scvi.model.SCANVI.prepare_query_anndata(adata_test_scanvi, scanvi_model)
     scanvi_preds_test = scanvi_model.predict(adata_test_scanvi, soft=False)
     y_pred_scanvi_test = np.array(scanvi_preds_test)
 
