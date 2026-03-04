@@ -179,7 +179,7 @@ sc.pl.violin(
     rotation=90,
     show=False,
 )
-plt.gcf().set_size_inches(22, 16)
+plt.gcf().set_size_inches(22, 20)
 plt.title("Genes expressed per cell type")
 plt.tight_layout()
 plt.savefig(FIGURES_DIR / "1_1_qc_per_celltype_genes.png", dpi=100)
@@ -192,7 +192,7 @@ sc.pl.violin(
     rotation=90,
     show=False,
 )
-plt.gcf().set_size_inches(22, 16)
+plt.gcf().set_size_inches(22, 20)
 plt.title("Total counts per cell type")
 plt.tight_layout()
 plt.savefig(FIGURES_DIR / "1_1_qc_per_celltype_counts.png", dpi=100)
@@ -812,7 +812,7 @@ sc.pl.violin(
     rotation=90,
     show=False,
 )
-plt.gcf().set_size_inches(16, 16)
+plt.gcf().set_size_inches(16, 20)
 plt.title("scANVI prediction confidence per predicted cell type")
 plt.tight_layout()
 plt.savefig(FIGURES_DIR / "2_3_scanvi_confidence_violin.png", dpi=100)
