@@ -1,7 +1,7 @@
 # %% [markdown]
-# # Assignment 2: Single-Cell RNA-seq — Braun ccRCC Atlas
+# # Assignment 2: Single-Cell Integration & Cell Type Annotation
 # 
-# 
+# #### Siva Satvik Mandapati - sm12779
 
 # %% [markdown]
 # #### =============================================================================
