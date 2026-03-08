@@ -1288,4 +1288,11 @@ print("=" * 70)
 for f in sorted(_glob.glob(str(FIGURES_DIR / "*.png"))):
     print(f"  {f}")
 
+# %% [markdown]
+# # References:
+# 
+# * https://github.com/sivasatvik/nyu-ai-in-genomics-a2/tasks/251358b9-3d19-481f-964c-a07a03217891
+# * Various improvements in local vscode copilot chat on top of the above reference.
+# 
+
 
