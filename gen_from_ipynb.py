@@ -501,7 +501,7 @@ plt.show()
 
 # %% [markdown]
 # ![PCA+kNN UMAP prediction](figures/1_3_umap_knn_pred.png)
-# The above UMAP colored by PCA+kNN predictions shows that the model captures much of the overall structure of the data, with many predicted cell types clustering in the same regions as their ground-truth counterparts.  However, there are also some misclassifications and some predicted clusters that are more mixed, which is consistent with the confusion matrix and ROC curves.
+# The above UMAP colored by PCA+kNN predictions shows that the model captures much of the overall structure of the data, with some predicted cell types clustering in the same regions as their ground-truth counterparts.  However, there are also many misclassifications and some predicted clusters that are more mixed, which is consistent with the confusion matrix and ROC curves.
 
 # %%
 sc.pl.umap(adata_cl, color="batch", title="Batch", show=False)
@@ -512,7 +512,7 @@ plt.show()
 
 # %% [markdown]
 # ![PCA+kNN UMAP batch](figures/1_3_umap_batch.png)
-# The above UMAP colored by batch shows that there is some batch structure in the data, with certain batches clustering together.  This could potentially confound classification if the model relies on batch-specific signals. Cells of batches 3 and 4 seems to cluster together more and also batches 2, 3 and 1 also seem to cluster together.
+# The above UMAP colored by batch shows that there is some batch structure in the data, with certain batches clustering together.  This could potentially confound classification if the model relies on batch-specific signals. Cells of batches 3 and 4 seems to cluster together more and also batches 2, 3 and 1 also seem to cluster together (just seeing it as an overview).
 
 # %%
 sc.pl.umap(adata_cl, color="n_genes_by_counts", title="n_genes_by_counts", show=False)
@@ -907,7 +907,7 @@ f1_ae  = f1_score(y_test_ae, y_pred_ae, average="weighted", zero_division=0)
 print(f"AE+kNN  Accuracy: {acc_ae:.4f}  |  Weighted F1: {f1_ae:.4f}")
 
 # %% [markdown]
-# AE+kNN  Accuracy: 0.4352  |  Weighted F1: 0.4186
+# AE+kNN  Accuracy: 0.4272  |  Weighted F1: 0.4119
 
 # %% [markdown]
 # ### 2.2 scVI Pre-training
@@ -1067,7 +1067,7 @@ f1_scanvi  = f1_score(y_true_scanvi, y_pred_scanvi, average="weighted", zero_div
 print(f"scANVI  Accuracy: {acc_scanvi:.4f}  |  Weighted F1: {f1_scanvi:.4f}")
 
 # %% [markdown]
-# scANVI  Accuracy: 0.8643  |  Weighted F1: 0.8637
+# scANVI  Accuracy: 0.8652  |  Weighted F1: 0.8649
 
 # %%
 classes_scanvi    = scanvi_probs.columns.tolist()
@@ -1098,6 +1098,17 @@ plt.show()
 
 # %% [markdown]
 # Conceptually, the scANVI model differs from the PCA+kNN and scVI models in that it is a semi-supervised model that leverages both the pre-trained scVI latent space and the available labels to learn a representation that is optimized for classifying cell types.  In contrast, PCA+kNN is a purely unsupervised approach that relies on dimensionality reduction followed by a simple classifier, while scVI is an unsupervised generative model that captures the underlying structure of the data but does not directly optimize for classification.  The scANVI model is designed to fine-tune the latent space to better separate cell types based on the available labels, which can lead to improved classification performance compared to purely unsupervised approaches.
+
+# %% [markdown]
+# On the training set, the following table shows the accuracies and f1 scores of the models.
+# | Model   | Accuracy | F1 Score |
+# |---|---:|---:|
+# | PCA+kNN | 0.7720 | 0.7574 |
+# | MLP | 0.5833 | 0.5686 |
+# | AE+kNN | 0.4272 | 0.4119 |
+# | scANVI | 0.8652 | 0.8649 |
+# 
+# scANVI seems to be the best performer during the training phase.
 
 # %% [markdown]
 # ### 2.4 Orthogonal Projection on test.h5ad
@@ -1224,8 +1235,8 @@ else:
 # |---|---:|---:|
 # | PCA+kNN | 0.5368 | 0.5767 |
 # | MLP | 0.3145 | 0.3466 |
-# | AE+kNN | 0.2948 | 0.3368 |
-# | scANVI | 0.5360 | 0.5997 |
+# | AE+kNN | 0.2999 | 0.3408 |
+# | scANVI | 0.5275 | 0.5939 |
 # 
 # The test-set metrics show that the PCA+kNN and scANVI models have similar accuracy and F1 scores, suggesting that both models are able to generalize reasonably well to the test set. The MLP and AE+kNN models have lower accuracy and F1 scores, indicating that they may not be generalizing as well to the test set.
 
