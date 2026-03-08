@@ -674,7 +674,7 @@ else:
     print(f"  Saved MLP checkpoint -> {_mlp_ckpt}")
 
 # %% [markdown]
-# Note: I tried training with Cosine Annealing scheduler which gave me bad accuracy (around 30%), but when I switched to ReduceLROnPlateau scheduling, the accuracy went up.
+# **Note**: I tried training with Cosine Annealing scheduler which gave me bad accuracy (around 30%), but when I switched to ReduceLROnPlateau scheduling, the accuracy went up.
 
 # %%
 fig, axes = plt.subplots(1, 2, figsize=(12, 4))
@@ -728,7 +728,6 @@ plt.savefig(FIGURES_DIR / "1_4_mlp_confusion_matrix.png", dpi=100)
 plt.show()
 
 # %% [markdown]
-# *Your analysis / inference here:*
 # ![MLP Confusion Matrix](figures/1_4_mlp_confusion_matrix.png)
 # The confustion matrix for the MLP baseline shows that although many cell types are classified well (higher counts along the diagonal), there are also some misclassifications, especially for rarer or more similar cell types.  For example, some CD8+ T cell subsets and tumor cells may be confused with each other or with other immune cells. Overall the MLP seems to capture the structure in the data but it's not better than the PCA+kNN baseline, which is consistent with its higher accuracy and F1 score.
 
