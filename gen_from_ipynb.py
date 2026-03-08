@@ -133,7 +133,7 @@ print(batch_summary.to_string())
 # | 3 | 1451.5 | 1320.0 | 912.2 | 4336.7 | 3129.0 | 4883.4 |
 # | 4 | 1294.1 | 1113.0 | 839.6 | 4042.2 | 2805.0 | 4237.2 |
 # 
-# The dataset contains 4 batches with varying numbers of cells.  Batches 1 and 2 have lower mean and median gene counts (~600 genes, ~1700 counts) compared to batches 3 and 4 (~1300-1500 genes, ~4000-4300 counts).  This suggests that batches 1 and 2 may have lower sequencing depth or more low-quality cells, which could be due to technical differences in sample processing or sequencing.  We will keep all batches for now but will monitor batch effects in downstream analyses.
+# The dataset contains 4 batches with varying numbers of cells.  Batches 1 and 2 have lower mean and median gene counts (around 600 genes, around 1700 counts) compared to batches 3 and 4 (around 1300-1500 genes, around 4000-4300 counts).  This suggests that batches 1 and 2 may have lower sequencing depth or more low-quality cells, which could be due to technical differences in sample processing or sequencing.  We will keep all batches for now but will monitor batch effects in downstream analyses.
 
 # %%
 print("\n--- Per-celltype summary (mean ± std) ---")
@@ -187,7 +187,7 @@ print(ct_summary.to_string())
 # | Tumor-immune doublet | 1409.6 | 1197.0 | 6426.2 | 3781.5 |
 # | pDC | 1009.7 | 799.0 | 2858.9 | 2082.0 |
 # 
-# There are 37 annotated cell types with varying QC metrics.  Tumor cells (especially Tumor cell.1) have the highest mean and median gene counts (~800-3100 genes, ~1600-11500 counts), which is expected since they are often larger and more transcriptionally active.  Immune doublets and myeloid cells also have relatively high counts, likely due to their larger size or doublet status.  In contrast, some T cell subsets and normal epithelial cells have lower counts (~400-1300 genes, ~800-2700 counts).  We will keep all cell types for now but will monitor whether certain cell types are more affected by batch effects or label masking in downstream analyses.
+# There are 37 annotated cell types with varying QC metrics.  Tumor cells (especially Tumor cell.1) have the highest mean and median gene counts (around 800-3100 genes, around 1600-11500 counts), which is expected since they are often larger and more transcriptionally active.  Immune doublets and myeloid cells also have relatively high counts, likely due to their larger size or doublet status.  In contrast, some T cell subsets and normal epithelial cells have lower counts (around 400-1300 genes, around 800-2700 counts).  We will keep all cell types for now but will monitor whether certain cell types are more affected by batch effects or label masking in downstream analyses.
 
 # %%
 fig, axes = plt.subplots(1, 2, figsize=(12, 4))
@@ -212,7 +212,7 @@ plt.show()
 
 # %% [markdown]
 # ![Genes expressed per batch figure](figures/1_1_qc_per_batch_genes.png)
-# The above plot shows the number of genes expressed per batch.  Batches 1 and 2 have lower median gene counts (~600-700) compared to batches 3 and 4 (~1300-1500), which is consistent with the summary table.
+# The above plot shows the number of genes expressed per batch.  Batches 1 and 2 have lower median gene counts (around 600-700) compared to batches 3 and 4 (around 1300-1500), which is consistent with the summary table.
 
 # %%
 sc.pl.violin(braun_dataset, "total_counts", groupby="batch", rotation=45, show=False)
@@ -224,7 +224,7 @@ plt.show()
 
 # %% [markdown]
 # ![Total counts per batch figure](figures/1_1_qc_per_batch_counts.png)
-# The above plot shows the total counts per batch.  Batches 1 and 2 have lower median counts (~1600-1700) compared to batches 3 and 4 (~4000-4300), which is consistent with the summary table.
+# The above plot shows the total counts per batch.  Batches 1 and 2 have lower median counts (around 1600-1700) compared to batches 3 and 4 (around 4000-4300), which is consistent with the summary table.
 
 # %%
 sc.pl.violin(braun_dataset, "n_genes_by_counts", groupby="celltype", rotation=90, show=False)
@@ -236,7 +236,7 @@ plt.show()
 
 # %% [markdown]
 # ![Genes expressed per cell type figure](figures/1_1_qc_per_celltype_genes.png)
-# The above plot shows the number of genes expressed per cell type.  Tumor cells (especially Tumor cell.1) have the highest median gene counts (~800-3100), while some T cell subsets and normal epithelial cells have lower median counts (~400-1300).  There is also a wide range of gene counts within each cell type, which is expected due to biological heterogeneity and technical variability.
+# The above plot shows the number of genes expressed per cell type.  Tumor cells (especially Tumor cell.1) have the highest median gene counts (around 800-3100), while some T cell subsets and normal epithelial cells have lower median counts (around 400-1300).  There is also a wide range of gene counts within each cell type, which is expected due to biological heterogeneity and technical variability.
 
 # %%
 sc.pl.violin(braun_dataset, "total_counts", groupby="celltype", rotation=90, show=False)
@@ -248,7 +248,7 @@ plt.show()
 
 # %% [markdown]
 # ![Total counts per cell type figure](figures/1_1_qc_per_celltype_counts.png)
-# The above plot shows the total counts per cell type.  Tumor cells (especially Tumor cell.1) have the highest median counts (~1600-11500), while some T cell subsets and normal epithelial cells have lower median counts (~800-2700).  There is also a wide range of counts within each cell type, which is expected due to biological heterogeneity and technical variability.
+# The above plot shows the total counts per cell type.  Tumor cells (especially Tumor cell.1) have the highest median counts (around 1600-11500), while some T cell subsets and normal epithelial cells have lower median counts (around 800-2700).  There is also a wide range of counts within each cell type, which is expected due to biological heterogeneity and technical variability.
 
 # %% [markdown]
 # ### 1.2 Semi-supervised Label Masking (30%)
@@ -428,7 +428,7 @@ print(f"PCA+kNN  Accuracy: {acc_knn:.4f}  |  Weighted F1: {f1_knn:.4f}")
 # %% [markdown]
 # PCA+kNN  Accuracy: 0.7720  |  Weighted F1: 0.7574
 # 
-# The PCA+kNN baseline achieves an accuracy of ~77.2 % and a weighted F1 score of ~0.757 on the unlabeled test set.  This is a reasonable baseline performance given the complexity of the dataset and the fact that 30 % of the labels were masked.
+# The PCA+kNN baseline achieves an accuracy of around 77.2 % and a weighted F1 score of around 0.757 on the unlabeled test set.  This is a reasonable baseline performance given the complexity of the dataset and the fact that 30 % of the labels were masked.
 
 # %%
 # Confusion matrix (scanpy + seaborn)
@@ -1289,7 +1289,7 @@ for f in sorted(_glob.glob(str(FIGURES_DIR / "*.png"))):
     print(f"  {f}")
 
 # %% [markdown]
-# # References:
+# ## References:
 # 
 # * https://github.com/sivasatvik/nyu-ai-in-genomics-a2/tasks/251358b9-3d19-481f-964c-a07a03217891
 # * Various improvements in local vscode copilot chat on top of the above reference.
